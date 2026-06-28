@@ -1,0 +1,46 @@
+@import "tailwindcss";
+
+/* Enable class-based dark mode in Tailwind v4 */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: "Inter", sans-serif;
+  --font-display: "Outfit", sans-serif;
+
+  --color-brand-50: #f5f7ff;
+  --color-brand-100: #ebf0ff;
+  --color-brand-200: #d6e0ff;
+  --color-brand-300: #b3c7ff;
+  --color-brand-400: #85a3ff;
+  --color-brand-500: #5c7aff;
+  --color-brand-600: #3350ff;
+  --color-brand-700: #243bd6;
+  --color-brand-800: #1d2fae;
+  --color-brand-900: #1d2a85;
+}
+
+/* Light mode styles */
+body {
+  font-family: var(--font-sans);
+  background-color: rgb(248, 250, 252);
+  color: rgb(71, 85, 105);
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  color: rgb(30, 41, 59);
+  letter-spacing: -0.025em;
+  transition: color 0.3s ease;
+}
+
+/* Class-based Dark Mode styling overrides for body & headings */
+.dark body {
+  background-color: rgb(15, 23, 42);
+  color: rgb(148, 163, 184);
+}
+
+.dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 {
+  color: rgb(241, 245, 249);
+}
