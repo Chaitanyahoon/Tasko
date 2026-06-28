@@ -1,52 +1,49 @@
-# Smart Task & Team Management Portal
+# Tasko | Multi-Tenant Team & Project Management Portal
 
-A full-stack project management and collaboration workspace designed for agile teams. This application enables team leaders to set up project outlines, invite team members, assign tasks, and track statuses in a beautiful responsive Kanban Board.
+Tasko is a premium, full-stack collaborative project workspace designed for organizations. It features multi-tenant organization boundaries, strict Role-Based Access Control (RBAC) separating Admins and Members, and a responsive Kanban board for task orchestration.
 
 ---
 
-## 🚀 Tech Stack
+## 🔗 Live Deployments
 
-### Frontend
-- **React (Vite)** — Single Page Application setup
-- **Tailwind CSS** — Fluid custom layouts, gradients, and responsive utility-first styles
-- **React Router v6** — Client-side page routing and Protected Routes
-- **React Hot Toast** — Real-time event notifications
-- **Axios** — HTTP client with interceptors for token headers
-- **Lucide React** — Elegant vector icons
+- **Frontend Portal (Vercel)**: [https://tasko-management.vercel.app](https://tasko-management.vercel.app)
+- **Backend API (Render)**: [https://tasko-lazu.onrender.com](https://tasko-lazu.onrender.com)
+- **API Health Endpoint**: [https://tasko-lazu.onrender.com/health](https://tasko-lazu.onrender.com/health)
 
-### Backend
-- **Node.js + Express.js** — REST API backend
-- **MongoDB Atlas + Mongoose** — Document-oriented database storage and object-document mapping
-- **JWT (JsonWebToken)** — Header-based authentication token
-- **Bcrypt.js** — Salt hashing passwords on-save
-- **Dotenv** — Environment variable isolation
+---
+
+## 🚀 Key Features
+
+- **Multi-Tenant Workspaces**: Users register by either creating a new organization or joining an existing one. Database queries for users, projects, and tasks are strictly scoped to the user's organization.
+- **Role-Based Access Control (RBAC)**:
+  - **Admin (Org Creator)**: Full permissions to create/edit/delete projects, add tasks, edit/delete tasks, and assign items.
+  - **Member (Joined Org)**: View-only access to boards, with the ability to modify the status of tasks assigned specifically to them.
+- **Task Management**: Grouped "My Tasks" view for assignees, automatic sidebar status-count badges, and real-time statistics.
+- **State-of-the-Art Aesthetics**: Modern glassmorphism themes, dynamic dark mode support, and micro-interactions.
 
 ---
 
 ## 📦 Project Structure
 
 ```
-smart-task/
+tasko/
 ├── backend/
 │   ├── config/             # Database connection setup
-│   ├── controllers/        # Express request controller functions
-│   ├── middleware/         # Auth verify & global error handlers
-│   ├── models/             # Mongoose schemas (User, Project, Task)
+│   ├── controllers/        # Express request controller functions (auth, project, task)
+│   ├── middleware/         # Session verify, RBAC, self-healing migration fallback
+│   ├── models/             # Mongoose schemas (Organization, User, Project, Task)
 │   ├── routes/             # Express routing maps
-│   ├── server.js           # Server entry file
-│   └── .env                # Server configuration secrets
+│   └── server.js           # Server entry file
 ├── frontend/
 │   ├── src/
-│   │   ├── api/            # Axios client instance
-│   │   ├── components/     # UI elements (Navbar, Cards, Modals)
-│   │   ├── context/        # Auth react context provider
-│   │   ├── pages/          # Login, Dashboard, Profile views
-│   │   ├── App.jsx         # App routing and layout
-│   │   ├── index.css       # Tailwind directives
-│   │   └── main.jsx        # Root mount file
-│   ├── index.html          # HTML entry point
-│   ├── tailwind.config.js  # Content paths and custom theme
-│   └── .env                # API base endpoint config
+│   │   ├── api/            # Axios client with interceptors
+│   │   ├── components/     # UI elements (Navbar, Sidebar, ProjectCard, TaskCard, Modal, Spinner)
+│   │   ├── context/        # Auth context provider
+│   │   ├── pages/          # Login, Register, Dashboard, ProjectDetails, Profile, MyTasks
+│   │   ├── App.jsx         # Router configuration
+│   │   └── index.css       # Tailwind directives
+│   ├── index.html          # HTML entry point with favicon
+│   └── vercel.json         # SPA router routing rewrites
 └── README.md
 ```
 
@@ -54,30 +51,31 @@ smart-task/
 
 ## 💾 MongoDB Schema Design
 
-### User Schema (`User.js`)
-- `name`: `String` (Required, trimmed)
-- `email`: `String` (Required, unique, validated email regex, lowercase)
-- `password`: `String` (Required, bcrypt hashed)
-- `avatar`: `String` (Default: Dicebear Initials matching user name)
-- `timestamps`: `true`
+### Organization (`Organization.js`)
+- `name`: `String` (Required, unique, trimmed, case-insensitive check)
 
-### Project Schema (`Project.js`)
+### User (`User.js`)
+- `name`: `String` (Required, trimmed)
+- `email`: `String` (Required, unique, validated email format, lowercase)
+- `password`: `String` (Required, bcrypt hashed)
+- `organization`: `ObjectId` (Ref: `Organization`, Required)
+- `role`: `String` (Enum: `['admin', 'member']`, Default: `member`)
+
+### Project (`Project.js`)
 - `name`: `String` (Required, trimmed)
 - `description`: `String`
 - `deadline`: `Date`
-- `owner`: `ObjectId` (Ref: User, Required)
-- `members`: `[ObjectId]` (Ref: User)
-- `timestamps`: `true`
+- `owner`: `ObjectId` (Ref: `User`, Required)
+- `organization`: `ObjectId` (Ref: `Organization`, Required)
 
-### Task Schema (`Task.js`)
+### Task (`Task.js`)
 - `title`: `String` (Required, trimmed)
 - `description`: `String`
 - `status`: `String` (Enum: `['Todo', 'In Progress', 'Done']`, Default: `Todo`)
 - `priority`: `String` (Enum: `['Low', 'Medium', 'High']`, Default: `Medium`)
 - `dueDate`: `Date`
-- `assignedTo`: `ObjectId` (Ref: User, Required)
-- `project`: `ObjectId` (Ref: Project, Required)
-- `timestamps`: `true`
+- `assignedTo`: `ObjectId` (Ref: `User`, Nullable)
+- `project`: `ObjectId` (Ref: `Project`, Required)
 
 ---
 
@@ -89,36 +87,37 @@ smart-task/
 | **POST** | `/register` | Register a new user, hashes password, returns token | No |
 | **POST** | `/login` | Log in user, verifies credentials, returns token | No |
 | **GET** | `/me` | Get logged-in user profile details & statistics counters | Yes |
-| **PUT** | `/me` | Update name, email, avatar, or password | Yes |
+| **PUT** | `/me` | Update profile name | Yes |
+| **GET** | `/users` | Get all registered users within the user's organization | Yes |
+| **GET** | `/organizations` | Get list of all organizations | No |
 
 ### Project Route (`/api/projects`)
 | Method | Endpoint | Description | Protected |
 | :--- | :--- | :--- | :--- |
-| **GET** | `/` | Fetch all projects where user is owner or member | Yes |
-| **POST** | `/` | Create a new project, resolves collaborator emails | Yes |
-| **GET** | `/:id` | Fetch details of a project populated with its tasks list | Yes |
-| **PUT** | `/:id` | Update project parameters (names, members, deadline) | Yes (Owner only) |
-| **DELETE**| `/:id` | Delete a project folder and cascade delete tasks | Yes (Owner only) |
+| **GET** | `/` | Fetch all projects scoped to the user's organization | Yes |
+| **POST** | `/` | Create a new project in the organization | Yes (Admin only) |
+| **GET** | `/:id` | Fetch project details populated with its tasks list | Yes |
+| **PUT** | `/:id` | Update project parameters | Yes (Owner or Admin only) |
+| **DELETE**| `/:id` | Delete a project folder and cascade delete tasks | Yes (Owner or Admin only) |
 
 ### Task Route (`/api/tasks`)
 | Method | Endpoint | Description | Protected |
 | :--- | :--- | :--- | :--- |
-| **POST** | `/` | Create a new task in a project | Yes |
-| **GET** | `/project/:projectId` | Fetch all tasks for a specific project folder | Yes |
-| **PUT** | `/:id` | Update task details (status, priority, assignee) | Yes |
-| **DELETE**| `/:id` | Remove task from project directory | Yes |
+| **POST** | `/` | Create a new task in a project | Yes (Admin only) |
+| **GET** | `/project/:projectId` | Fetch all tasks for a specific project | Yes |
+| **PUT** | `/:id` | Update task details (Admin) / Update status only (Assignee) | Yes |
+| **DELETE**| `/:id` | Remove task from project board | Yes (Admin only) |
+| **GET** | `/assigned-to-me` | Fetch all tasks assigned to the current user | Yes |
 
 ---
 
 ## 🛠️ Installation & Setup
 
-Follow these steps to run the portal locally.
-
 ### Prerequisites
-- Node.js (v16+) installed
-- MongoDB database (local MongoDB server or Atlas cluster connection)
+- Node.js (v18+)
+- MongoDB Atlas Database
 
-### 1. Database & Server Setup (Backend)
+### 1. Backend Setup
 1. Navigate to backend:
    ```bash
    cd backend
@@ -127,42 +126,32 @@ Follow these steps to run the portal locally.
    ```bash
    npm install
    ```
-3. Create a `.env` file in the `backend/` directory:
+3. Create a `.env` file:
    ```env
    PORT=5000
    MONGO_URI=your_mongodb_connection_string
-   JWT_SECRET=any_strong_jwt_signing_key_12345
+   JWT_SECRET=your_jwt_signing_key
    JWT_EXPIRE=7d
    ```
-4. Start the server (Dev mode with Nodemon):
+4. Start dev server:
    ```bash
    npm run dev
    ```
 
-### 2. Frontend Portal Setup
-1. Open a new terminal and navigate to frontend:
+### 2. Frontend Setup
+1. Navigate to frontend:
    ```bash
    cd frontend
    ```
-2. Install packages:
+2. Install dependencies:
    ```bash
    npm install
    ```
-3. Create a `.env` file in the `frontend/` directory:
+3. Create a `.env` file:
    ```env
    VITE_API_URL=http://localhost:5000/api
    ```
-4. Run Vite client developer server:
+4. Start dev server:
    ```bash
    npm run dev
    ```
-5. Click the local host URL shown (e.g. `http://localhost:5173`) in your browser.
-
----
-
-## 📌 Architectural Assumptions
-
-1. **User Collaboration**: Collaborators are added to projects by typing their registered email address inside the creation or edit modal. The system queries their accounts and appends their ObjectIds to the project's member list.
-2. **Cascade Deletes**: Deleting a project folder will delete all tasks linked to that project ID from the Database.
-3. **Task Assignment**: Tasks can only be assigned to users who are members of that project (the Owner or any collaborator). This constraint is enforced in the Frontend UI through select dropdown lists.
-4. **Local Development defaults**: MongoDB connection defaults to localhost (`mongodb://localhost:27017/smart_task_db`) to simplify running the backend.
