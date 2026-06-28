@@ -1,5 +1,6 @@
 const Project = require('../models/Project');
 const Task = require('../models/Task');
+const { logAction } = require('../middleware/auditLogger');
 
 // @desc    Get all projects in the user's organization
 // @route   GET /api/projects
@@ -56,6 +57,9 @@ const createProject = async (req, res, next) => {
       owner: req.user._id,
       organization: req.user.organization,
     });
+
+    // Audit log project creation
+    await logAction(req.user._id, req.user.organization, 'Project Created', `${req.user.name} created project "${project.name}"`);
 
     res.status(201).json(project);
   } catch (error) {
@@ -130,6 +134,10 @@ const updateProject = async (req, res, next) => {
     project.deadline = deadline !== undefined ? deadline : project.deadline;
 
     const updatedProject = await project.save();
+
+    // Audit log project update
+    await logAction(req.user._id, req.user.organization, 'Project Updated', `${req.user.name} updated project settings for "${updatedProject.name}"`);
+
     res.json(updatedProject);
   } catch (error) {
     next(error);
@@ -161,6 +169,9 @@ const deleteProject = async (req, res, next) => {
 
     // Delete project
     await project.deleteOne();
+
+    // Audit log project deletion
+    await logAction(req.user._id, req.user.organization, 'Project Deleted', `${req.user.name} deleted project "${project.name}" and all its tasks`);
 
     res.json({ message: 'Project and all its tasks removed' });
   } catch (error) {

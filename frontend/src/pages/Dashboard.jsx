@@ -34,6 +34,27 @@ const Dashboard = () => {
   });
   const [formErrors, setFormErrors] = useState({});
 
+  const [auditLogs, setAuditLogs] = useState([]);
+  const [auditLoading, setAuditLoading] = useState(false);
+
+  const fetchAuditLogs = async () => {
+    try {
+      setAuditLoading(true);
+      const res = await api.get('/audit');
+      setAuditLogs(res.data);
+    } catch (err) {
+      console.error('Failed to load audit logs:', err);
+    } finally {
+      setAuditLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'audit' && user?.role === 'admin') {
+      fetchAuditLogs();
+    }
+  }, [activeTab, user]);
+
   const fetchProjects = async () => {
     try {
       setLoading(true);
@@ -252,56 +273,212 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Filter and Search */}
-      <div className="relative">
-        <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400 dark:text-slate-500">
-          <MdSearch className="h-5 w-5" />
-        </span>
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search projects by name..."
-          className="block w-full rounded-xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm placeholder-slate-400 transition-all focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 dark:border-slate-800 dark:bg-slate-800 dark:text-white"
-        />
+      {/* Analytics Charts Grid */}
+      <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
+        {/* Task Completion Progress */}
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-800 shadow-sm flex flex-col justify-between">
+          <div>
+            <h4 className="font-display text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-4">Task Completion Rate</h4>
+            <div className="flex items-center justify-around py-2">
+              {/* Donut SVG */}
+              <div className="relative flex items-center justify-center h-28 w-28">
+                <svg className="w-full h-full transform -rotate-90" viewBox="0 0 120 120">
+                  <circle
+                    cx="60"
+                    cy="60"
+                    r="50"
+                    className="text-slate-100 dark:text-slate-700/60"
+                    strokeWidth="10"
+                    stroke="currentColor"
+                    fill="transparent"
+                  />
+                  <circle
+                    cx="60"
+                    cy="60"
+                    r="50"
+                    className="text-brand-600 dark:text-brand-400 transition-all duration-700 ease-out"
+                    strokeWidth="10"
+                    strokeDasharray={2 * Math.PI * 50}
+                    strokeDashoffset={2 * Math.PI * 50 - (totalTasks > 0 ? (completedTasks / totalTasks) : 0) * 2 * Math.PI * 50}
+                    strokeLinecap="round"
+                    stroke="currentColor"
+                    fill="transparent"
+                  />
+                </svg>
+                <div className="absolute flex flex-col items-center">
+                  <span className="font-display text-xl font-bold text-slate-800 dark:text-white">
+                    {totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0}%
+                  </span>
+                  <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Done</span>
+                </div>
+              </div>
+              
+              {/* Legend */}
+              <div className="space-y-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                <div className="flex items-center space-x-2">
+                  <span className="h-3 w-3 rounded bg-brand-600 dark:bg-brand-400" />
+                  <span>Completed: <strong>{completedTasks}</strong></span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="h-3 w-3 rounded bg-slate-200 dark:bg-slate-700" />
+                  <span>Remaining: <strong>{pendingTasks}</strong></span>
+                </div>
+                <div className="flex items-center space-x-2 border-t border-slate-100 pt-2 dark:border-slate-700/50">
+                  <span>Total Tasks: <strong>{totalTasks}</strong></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Project Task Load */}
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-800 shadow-sm flex flex-col justify-between">
+          <div>
+            <h4 className="font-display text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-4">Project Task Volume</h4>
+            <div className="space-y-3.5">
+              {projects && projects.length > 0 ? (
+                projects.slice(0, 3).map((p) => {
+                  const percent = totalTasks > 0 ? ((p.stats?.total || 0) / totalTasks) * 100 : 0;
+                  return (
+                    <div key={p._id} className="space-y-1">
+                      <div className="flex items-center justify-between text-xs font-semibold">
+                        <span className="text-slate-705 dark:text-slate-300 font-bold truncate max-w-[180px]">{p.name}</span>
+                        <span className="text-slate-550 dark:text-slate-400 font-bold">{p.stats?.total || 0} tasks ({Math.round(percent)}%)</span>
+                      </div>
+                      <div className="h-2 w-full bg-slate-100 rounded-full dark:bg-slate-700 overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-brand-600 to-indigo-600 rounded-full transition-all duration-500 ease-out"
+                          style={{ width: `${percent}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <p className="text-xs italic text-slate-400 text-center py-6">No projects to display statistics</p>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Grid List */}
-      {loading ? (
-        <Spinner />
-      ) : filteredProjects.length > 0 ? (
-        <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-          {filteredProjects.map((project) => (
-            <ProjectCard
-              key={project._id}
-              project={project}
-              onEdit={user?.role === 'admin' ? openEditModal : null}
-              onDelete={user?.role === 'admin' ? openDeleteModal : null}
+      {/* Tab Selector */}
+      {user?.role === 'admin' && (
+        <div className="flex border-b border-slate-200 dark:border-slate-800 pb-px">
+          <button
+            type="button"
+            onClick={() => setActiveTab('projects')}
+            className={`pb-3 text-sm font-bold border-b-2 px-4 transition-all cursor-pointer ${
+              activeTab === 'projects'
+                ? 'border-brand-600 text-brand-600 dark:border-brand-400 dark:text-brand-400'
+                : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+            }`}
+          >
+            Projects
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('audit')}
+            className={`pb-3 text-sm font-bold border-b-2 px-4 transition-all cursor-pointer ${
+              activeTab === 'audit'
+                ? 'border-brand-600 text-brand-600 dark:border-brand-400 dark:text-brand-400'
+                : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+            }`}
+          >
+            Audit Logs
+          </button>
+        </div>
+      )}
+
+      {/* Tab Contents */}
+      {activeTab === 'projects' ? (
+        <>
+          {/* Filter and Search */}
+          <div className="relative">
+            <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400 dark:text-slate-500">
+              <MdSearch className="h-5 w-5" />
+            </span>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search projects by name..."
+              className="block w-full rounded-xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm placeholder-slate-400 transition-all focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 dark:border-slate-800 dark:bg-slate-800 dark:text-white"
             />
-          ))}
-        </div>
-      ) : (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center dark:border-slate-800 dark:bg-slate-800/40">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-50 text-slate-400 dark:bg-slate-700/50 dark:text-slate-500">
-            <MdFolderSpecial className="h-7 w-7" />
           </div>
-          <h3 className="mt-4 font-display text-base font-bold text-slate-700 dark:text-slate-200">
-            {searchQuery ? 'No matching projects found' : 'No projects yet'}
-          </h3>
-          <p className="mt-1 max-w-xs text-xs text-slate-500 font-medium dark:text-slate-400">
-            {searchQuery
-              ? 'Try modifying your search query to look for another project.'
-              : 'Create your first project board and list deliverables.'}
-          </p>
-          {!searchQuery && (
-            <button
-              onClick={openCreateModal}
-              className="mt-5 rounded-xl bg-brand-50 px-4.5 py-2.5 text-xs font-semibold text-brand-700 hover:bg-brand-100 dark:bg-brand-950/30 dark:text-brand-400 dark:hover:bg-brand-900/40 transition-all cursor-pointer"
-            >
-              No projects yet. Create your first project!
-            </button>
+
+          {/* Grid List */}
+          {loading ? (
+            <Spinner />
+          ) : filteredProjects.length > 0 ? (
+            <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+              {filteredProjects.map((project) => (
+                <ProjectCard
+                  key={project._id}
+                  project={project}
+                  onEdit={user?.role === 'admin' ? openEditModal : null}
+                  onDelete={user?.role === 'admin' ? openDeleteModal : null}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center dark:border-slate-800 dark:bg-slate-800/40">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-50 text-slate-400 dark:bg-slate-700/50 dark:text-slate-500">
+                <MdFolderSpecial className="h-7 w-7" />
+              </div>
+              <h3 className="mt-4 font-display text-base font-bold text-slate-700 dark:text-slate-200">
+                {searchQuery ? 'No matching projects found' : 'No projects yet'}
+              </h3>
+              <p className="mt-1 max-w-xs text-xs text-slate-500 font-medium dark:text-slate-400">
+                {searchQuery
+                  ? 'Try modifying your search query to look for another project.'
+                  : 'Create your first project board and list deliverables.'}
+              </p>
+              {!searchQuery && user?.role === 'admin' && (
+                <button
+                  type="button"
+                  onClick={openCreateModal}
+                  className="mt-5 rounded-xl bg-brand-50 px-4.5 py-2.5 text-xs font-semibold text-brand-700 hover:bg-brand-100 dark:bg-brand-950/30 dark:text-brand-400 dark:hover:bg-brand-900/40 transition-all cursor-pointer"
+                >
+                  No projects yet. Create your first project!
+                </button>
+              )}
+            </div>
           )}
-        </div>
+        </>
+      ) : (
+        /* Audit Logs Tab Content */
+        auditLoading ? (
+          <Spinner />
+        ) : auditLogs.length > 0 ? (
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-800 shadow-sm space-y-4">
+            <div className="divide-y divide-slate-100 dark:divide-slate-700/60 max-h-[500px] overflow-y-auto pr-1">
+              {auditLogs.map((log) => (
+                <div key={log._id} className="py-3 flex items-start space-x-3 text-sm first:pt-0 last:pb-0">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-650 dark:text-slate-300 font-bold uppercase shrink-0">
+                    {log.user?.name ? log.user.name.charAt(0) : 'U'}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <p className="font-bold text-slate-800 dark:text-slate-200 truncate pr-2">{log.user?.name || 'System'}</p>
+                      <span className="text-[9px] text-slate-400 font-semibold shrink-0">
+                        {new Date(log.createdAt).toLocaleString()}
+                      </span>
+                    </div>
+                    <span className="inline-flex rounded-full bg-slate-50 border border-slate-200 px-2 py-0.5 text-[9px] font-bold text-slate-500 dark:bg-slate-900 dark:border-slate-850 dark:text-slate-400 uppercase tracking-wider mt-0.5">
+                      {log.action}
+                    </span>
+                    <p className="text-xs text-slate-500 dark:text-slate-405 font-medium mt-1 leading-relaxed">{log.details}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <p className="text-xs italic text-slate-405 dark:text-slate-500">No logs found for this organization.</p>
+          </div>
+        )
       )}
 
       {/* Create/Edit Modal */}

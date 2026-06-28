@@ -2,6 +2,7 @@ const Task = require('../models/Task');
 const Project = require('../models/Project');
 const User = require('../models/User');
 const mongoose = require('mongoose');
+const { logAction } = require('../middleware/auditLogger');
 
 // @desc    Get all tasks for a project
 // @route   GET /api/tasks/project/:projectId
@@ -97,6 +98,9 @@ const createTask = async (req, res, next) => {
       .populate('assignedTo', 'name email')
       .populate('project', 'name');
 
+    // Audit log task creation
+    await logAction(req.user._id, req.user.organization, 'Task Created', `${req.user.name} created task "${populatedTask.title}" in project "${project.name}"`);
+
     res.status(201).json(populatedTask);
   } catch (error) {
     next(error);
@@ -176,6 +180,9 @@ const updateTask = async (req, res, next) => {
       .populate('assignedTo', 'name email')
       .populate('project', 'name');
 
+    // Audit log task update
+    await logAction(req.user._id, req.user.organization, 'Task Updated', `${req.user.name} updated task "${populatedUpdatedTask.title}" status to "${populatedUpdatedTask.status}"`);
+
     res.json(populatedUpdatedTask);
   } catch (error) {
     next(error);
@@ -206,6 +213,10 @@ const deleteTask = async (req, res, next) => {
     }
 
     await task.deleteOne();
+
+    // Audit log task deletion
+    await logAction(req.user._id, req.user.organization, 'Task Deleted', `${req.user.name} deleted task "${task.title}"`);
+
     res.json({ message: 'Task deleted successfully' });
   } catch (error) {
     next(error);

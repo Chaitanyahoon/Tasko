@@ -3,6 +3,7 @@ const User = require('../models/User');
 const Project = require('../models/Project');
 const Task = require('../models/Task');
 const Organization = require('../models/Organization');
+const { logAction } = require('../middleware/auditLogger');
 
 // Generate JWT
 const generateToken = (id) => {
@@ -98,6 +99,10 @@ const registerUser = async (req, res, next) => {
 
     if (user) {
       const populatedUser = await User.findById(user._id).populate('organization', 'name');
+      
+      // Audit log registration
+      await logAction(populatedUser._id, populatedUser.organization._id, 'User Registered', `${populatedUser.name} registered as a new organization ${populatedUser.role}`);
+
       res.status(201).json({
         token: generateToken(populatedUser._id),
         user: {
@@ -138,6 +143,9 @@ const loginUser = async (req, res, next) => {
     const user = await User.findOne({ email }).populate('organization', 'name');
 
     if (user && (await user.matchPassword(password))) {
+      // Audit log login
+      await logAction(user._id, user.organization._id, 'User Login', `${user.name} logged into Tasko`);
+
       res.json({
         token: generateToken(user._id),
         user: {
@@ -222,6 +230,9 @@ const updateUserProfile = async (req, res, next) => {
 
     user.name = name;
     const updatedUser = await user.save();
+
+    // Audit log profile update
+    await logAction(updatedUser._id, updatedUser.organization._id, 'Profile Updated', `${updatedUser.name} updated their profile name`);
 
     res.json({
       _id: updatedUser._id,
