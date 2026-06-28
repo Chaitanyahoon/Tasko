@@ -2,12 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
-import { MdAssignmentTurnedIn, MdMail, MdLock, MdPerson, MdBusiness } from 'react-icons/md';
+import { MdAssignmentTurnedIn, MdMail, MdLock, MdPerson, MdBusiness, MdVisibility, MdVisibilityOff } from 'react-icons/md';
 import toast from 'react-hot-toast';
 
 const Register = () => {
   const { register, loading } = useAuth();
   const navigate = useNavigate();
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -173,17 +176,24 @@ const Register = () => {
                 <MdLock className="h-5 w-5" />
               </span>
               <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
-                className={`block w-full rounded-xl border bg-slate-50 py-3 pl-10 pr-3 text-sm placeholder-slate-400 transition-all focus:bg-white focus:outline-none focus:ring-1 dark:bg-slate-700 dark:text-white ${
+                className={`block w-full rounded-xl border bg-slate-50 py-3 pl-10 pr-10 text-sm placeholder-slate-400 transition-all focus:bg-white focus:outline-none focus:ring-1 dark:bg-slate-700 dark:text-white ${
                   errors.password
                     ? 'border-rose-500 focus:border-rose-500 focus:ring-rose-500'
                     : 'border-slate-200 focus:border-brand-500 focus:ring-brand-500 dark:border-slate-700'
                 }`}
                 placeholder="••••••••"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 focus:outline-none cursor-pointer"
+              >
+                {showPassword ? <MdVisibilityOff className="h-5 w-5" /> : <MdVisibility className="h-5 w-5" />}
+              </button>
             </div>
             {errors.password && <p className="mt-1 text-xs font-semibold text-rose-500">{errors.password}</p>}
           </div>
@@ -196,17 +206,24 @@ const Register = () => {
                 <MdLock className="h-5 w-5" />
               </span>
               <input
-                type="password"
+                type={showConfirmPassword ? 'text' : 'password'}
                 name="confirmPassword"
                 value={formData.confirmPassword}
                 onChange={handleChange}
-                className={`block w-full rounded-xl border bg-slate-50 py-3 pl-10 pr-3 text-sm placeholder-slate-400 transition-all focus:bg-white focus:outline-none focus:ring-1 dark:bg-slate-700 dark:text-white ${
+                className={`block w-full rounded-xl border bg-slate-50 py-3 pl-10 pr-10 text-sm placeholder-slate-400 transition-all focus:bg-white focus:outline-none focus:ring-1 dark:bg-slate-700 dark:text-white ${
                   errors.confirmPassword
                     ? 'border-rose-500 focus:border-rose-500 focus:ring-rose-500'
                     : 'border-slate-200 focus:border-brand-500 focus:ring-brand-500 dark:border-slate-700'
                 }`}
                 placeholder="••••••••"
               />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 focus:outline-none cursor-pointer"
+              >
+                {showConfirmPassword ? <MdVisibilityOff className="h-5 w-5" /> : <MdVisibility className="h-5 w-5" />}
+              </button>
             </div>
             {errors.confirmPassword && (
               <p className="mt-1 text-xs font-semibold text-rose-500">{errors.confirmPassword}</p>
