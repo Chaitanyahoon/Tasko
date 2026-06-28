@@ -14,6 +14,25 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Health Check Endpoint (keeps Render free tier active)
+app.get('/health', (req, res) => {
+  const mongoose = require('mongoose');
+  const dbState = mongoose.connection.readyState;
+  const states = {
+    0: 'disconnected',
+    1: 'connected',
+    2: 'connecting',
+    3: 'disconnecting',
+  };
+  const isHealthy = dbState === 1;
+  res.status(isHealthy ? 200 : 503).json({
+    status: isHealthy ? 'UP' : 'DOWN',
+    timestamp: new Date(),
+    database: states[dbState] || 'unknown',
+    uptime: process.uptime(),
+  });
+});
+
 // Routes
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/projects', require('./routes/projectRoutes'));
