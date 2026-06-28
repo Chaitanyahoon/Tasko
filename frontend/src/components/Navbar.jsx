@@ -38,7 +38,7 @@ const Navbar = ({ onMobileMenuToggle }) => {
           <MdMenu className="h-6 w-6" />
         </button>
         <Link to="/" className="flex items-center">
-          <img src="/logo.png" alt="Tasko Logo" className="h-8.5 w-auto object-contain dark:invert" />
+          <img src="/logo.png" alt="Tasko Logo" className="h-11.5 w-auto object-contain dark:invert" />
         </Link>
       </div>
 
@@ -55,11 +55,14 @@ const Navbar = ({ onMobileMenuToggle }) => {
 
         {/* User Card */}
         {user && (
-          <div className="flex items-center space-x-2 rounded-xl border border-slate-100 bg-slate-50/50 px-3 py-1.5 dark:border-slate-700/60 dark:bg-slate-900">
-            <div className="text-right">
-              <p className="text-xs font-bold text-slate-800 dark:text-slate-200 line-clamp-1">{user.name}</p>
-              <p className="text-[10px] text-slate-400 font-semibold dark:text-slate-500">
-                {user.organization?.name || 'None'} ({user.role || 'member'})
+          <div className="flex items-center space-x-3 rounded-xl border border-slate-100 bg-slate-50/50 px-3 py-1.5 dark:border-slate-700/60 dark:bg-slate-900">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-600 text-white font-bold text-xs uppercase shadow-sm shadow-brand-500/10">
+              {user.name ? user.name.charAt(0) : 'U'}
+            </div>
+            <div className="text-left">
+              <p className="text-xs font-bold text-slate-800 dark:text-slate-200 line-clamp-1 leading-none mb-0.5">{user.name}</p>
+              <p className="text-[9px] font-bold text-slate-450 dark:text-slate-500 uppercase tracking-wider">
+                {user.organization?.name || 'None'} • <span className="text-brand-600 dark:text-brand-400">{user.role || 'member'}</span>
               </p>
             </div>
           </div>
