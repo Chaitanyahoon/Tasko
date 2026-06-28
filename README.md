@@ -4,11 +4,12 @@ Tasko is a premium, full-stack collaborative project workspace designed for orga
 
 ---
 
-## 🔗 Live Deployments
+## 🔗 Live Deployments & Assets
 
 - **Frontend Portal (Vercel)**: [https://tasko-management.vercel.app](https://tasko-management.vercel.app)
 - **Backend API (Render)**: [https://tasko-lazu.onrender.com](https://tasko-lazu.onrender.com)
 - **API Health Endpoint**: [https://tasko-lazu.onrender.com/health](https://tasko-lazu.onrender.com/health)
+- **Presentation Slide Deck (PPTX)**: [Tasko-Collaborative-Workspace.pptx](./Tasko-Collaborative-Workspace.pptx)
 
 ---
 
